@@ -722,9 +722,7 @@ tsvGetData (SEXP dataFile, SEXP indexFile, SEXP rowpatterns, SEXP colpatterns, S
 		    error ("tsvGetData: unable to create even a temporary indexfile\n");
 		}
 		indexpp[ii] = fdopen (tmpfd, "wb+");
-#ifndef _WIN32
 		unlink (tmpname);
-#endif
 	    }
 	    res = generate_index (tsvpp[ii], indexpp[ii]);
 	    if (is_fatal_error (res)) {
