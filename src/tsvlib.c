@@ -144,20 +144,19 @@ get_tsv_line_buffer (char *buffer, size_t bufsize, FILE *tsvp, long posn)
 	error ("get_tsv_line: error seeking to line starting at %ld\n", posn);
 
     len = 0;
-    while ((ch = getc (tsvp)) != EOF && ch != '\n' && ch != '\r') {
-	if (len >= (bufsize-1)) {
+    while ((ch = getc (tsvp)) != EOF && ch != '\n') {
+	if (len >= (bufsize - 1)) {
 	    error ("get_tsv_line: line starting at %ld longer than buffer length (%d bytes)\n", posn, bufsize);
 	}
-	buffer[len++] = ch;
+	if (ch != '\r') { /* Ignore carriage return character (should only be on Windows). */
+	    buffer[len++] = ch;
+	}
     }
 
     if (ch == EOF) {
 	warning ("get_tsv_line: line starting at %ld is prematurely terminated by EOF\n", posn);
     }
 	
-#ifdef _WIN32
-    buffer[len++] = '\r'; /* Add CR to end of line. */
-#endif
     buffer[len++] = '\n'; /* Check above ensures space for this. */
 #ifdef DEBUG
     Rprintf ("< get_tsv_line_buffer (len=%d)\n", len);
