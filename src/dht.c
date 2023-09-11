@@ -9,14 +9,18 @@
 /* strndup is not part of the standard C library
    On POSIX systems, it is declared in string.h
    On Windows systems, it doesn't seem to be declared anywhere.
+
+   Returns a pointer to a null-terminated string, which is a duplicate of the
+   string pointed to by s. At most, n bytes are copied.
+   The returned pointer's memory should be freed with free().
 */
 char *strndup(const char *s, size_t n) {
     char *p;
     size_t n1;
-
+    /* count characters up to end, n1 <= n */
     for (n1 = 0; n1 < n && s[n1] != '\0'; n1++)
         continue;
-    p = malloc(n + 1);
+    p = malloc(n1 + 1);
     if (p != NULL) {
         memcpy(p, s, n1);
         p[n1] = '\0';
