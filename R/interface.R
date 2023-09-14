@@ -117,5 +117,6 @@ tsvGetLines <- function (filename, indexfile, patterns, findany=TRUE) {
 #'
 #' @seealso tsvGenIndex, tsvGetLines
 tsvGetData <- function (filename, indexfile, rowpatterns, colpatterns, dtype="", findany=TRUE) {
-    .Call("tsvGetData", filename, indexfile, rowpatterns, colpatterns, dtype, findany)
+    tmp_template <- file.path(tempdir(), "tsvio-XXXXXX"); ## used for making temporary files in the C code
+    .Call("tsvGetData", filename, indexfile, rowpatterns, colpatterns, dtype, findany, tmp_template)
 };
