@@ -455,7 +455,7 @@ scan_header_line (dynHashTab *dht, FILE *tsvp, int insertall, char *buffer, long
     indexp = 0;
     /* Assert: numpats fields have been inserted into the dht this call. */
     /* Assert: indexp is positioned at start of a field or immediately following buffer contents. */
-    while (indexp < linelen - 1) {
+    while (indexp < linelen && buffer[indexp] != '\n' && buffer[indexp] != '\r') {
 
 	/* Read field (aka pattern). */
 	fstart = indexp;
