@@ -32,7 +32,34 @@
 
 SEXP tsvGenIndex (SEXP dataFile, SEXP indexFile);
 SEXP tsvGetLines (SEXP dataFile, SEXP indexFile, SEXP patterns, SEXP findany);
-SEXP tsvGetData (SEXP dataFile, SEXP indexFile, SEXP rowpatterns, SEXP colpatterns, SEXP dtype, SEXP findany);
+SEXP tsvGetData (SEXP dataFile, SEXP indexFile, SEXP rowpatterns, SEXP colpatterns, SEXP dtype, SEXP findany, SEXP r_tmp_template);
+
+
+#ifdef _WIN32
+/*  This is a simple implementation of mkstemp for Windows (mkstemp is not part of C library on Windows).
+
+    Returns a file descriptor for a temporary file if successful; returns -1 otherwise.
+
+    Note: the various flags to _sopen_s are such that the file is automatically deleted after use.
+*/
+int
+mkstemp(char *template) {
+	int tmpfd;
+	// a little bit of gymnastics to create templateWIN, the template file path for _mktemp_s
+	const char *const_template = template;
+	const int const_template_len = strlen(const_template);
+	char templateWIN[const_template_len + 1];
+	strcpy(templateWIN, const_template);
+	int error_no;
+	error_no = _mktemp_s(templateWIN, sizeof(templateWIN));
+	if (error_no == 0) {
+		_sopen_s(&tmpfd, templateWIN, _O_RDWR | _O_CREAT | _O_TEMPORARY | _O_SHORT_LIVED, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+	} else {
+		tmpfd = -1;
+	}
+	return tmpfd;
+}
+#endif
 
 /* Allocate resources needed by the package.
  */
@@ -42,7 +69,7 @@ R_init_tsvio (DllInfo *info)
     static const R_CallMethodDef callMethods[] = {
 	{ "tsvGenIndex", (DL_FUNC) &tsvGenIndex, 2 },
 	{ "tsvGetLines", (DL_FUNC) &tsvGetLines, 4 },
-	{ "tsvGetData",  (DL_FUNC) &tsvGetData,  6 },
+	{ "tsvGetData",  (DL_FUNC) &tsvGetData,  7 },
 	{ NULL, NULL, 0 }
     };
     R_registerRoutines (info, NULL, callMethods, NULL, NULL);
@@ -145,10 +172,12 @@ get_tsv_line_buffer (char *buffer, size_t bufsize, FILE *tsvp, long posn)
 
     len = 0;
     while ((ch = getc (tsvp)) != EOF && ch != '\n') {
-	if (len >= (bufsize-1)) {
+	if (len >= (bufsize - 1)) {
 	    error ("get_tsv_line: line starting at %ld longer than buffer length (%d bytes)\n", posn, bufsize);
 	}
-	buffer[len++] = ch;
+	if (ch != '\r') { /* Ignore carriage return character (should only be on Windows). */
+	    buffer[len++] = ch;
+	}
     }
 
     if (ch == EOF) {
@@ -362,7 +391,7 @@ get_tsv_fields (SEXP result,	     /* Destination R 'matrix' */
 
     indexp = 0;
     /* Advance over first column (row header) and its terminator. */
-    while ((indexp < linelen) && buffer[indexp] != '\t' && buffer[indexp] != '\n') {
+    while ((indexp < linelen) && buffer[indexp] != '\t' && buffer[indexp] != '\n' && buffer[indexp] != '\r') {
 	indexp++;
     }
     if (indexp < linelen) indexp++; /* Advance over field-terminator, if any. */
@@ -374,7 +403,7 @@ get_tsv_fields (SEXP result,	     /* Destination R 'matrix' */
 
 	/* Read field. */
 	fstart = indexp;
-	while ((indexp < linelen) && buffer[indexp] != '\t' && buffer[indexp] != '\n') {
+	while ((indexp < linelen) && buffer[indexp] != '\t' && buffer[indexp] != '\n' && buffer[indexp] != '\r') {
 	    indexp++;
 	}
 
@@ -426,11 +455,11 @@ scan_header_line (dynHashTab *dht, FILE *tsvp, int insertall, char *buffer, long
     indexp = 0;
     /* Assert: numpats fields have been inserted into the dht this call. */
     /* Assert: indexp is positioned at start of a field or immediately following buffer contents. */
-    while (indexp < linelen) {
+    while (indexp < linelen && buffer[indexp] != '\n' && buffer[indexp] != '\r') {
 
 	/* Read field (aka pattern). */
 	fstart = indexp;
-	while ((indexp < linelen) && buffer[indexp] != '\t' && buffer[indexp] != '\n') {
+	while ((indexp < linelen) && buffer[indexp] != '\t' && buffer[indexp] != '\n' && buffer[indexp] != '\r') {
 	    indexp++;
 	}
 
@@ -476,7 +505,7 @@ autoRowPatterns (FILE *indexfile)
     while (fgets (buffer, LINEBUFFERSIZE, indexfile)) {
 	linelen = strlen (buffer);
 	indexp = 0;
-	while ((indexp < linelen) && buffer[indexp] != '\t' && buffer[indexp] != '\n') {
+	while ((indexp < linelen) && buffer[indexp] != '\t' && buffer[indexp] != '\n' && buffer[indexp] != '\r') {
 	    indexp++;
 	}
 	element = mkCharLen(buffer, indexp);
@@ -624,7 +653,7 @@ getDataFromFile (SEXP results,	    /* Destination matrix. */
 }
 
 SEXP
-tsvGetData (SEXP dataFile, SEXP indexFile, SEXP rowpatterns, SEXP colpatterns, SEXP dtype, SEXP findany)
+tsvGetData (SEXP dataFile, SEXP indexFile, SEXP rowpatterns, SEXP colpatterns, SEXP dtype, SEXP findany, SEXP r_tmp_template)
 {
     /* Local variables that must have a defined value before jumping to the exit. */
     long nprotect = 0;
@@ -640,16 +669,8 @@ tsvGetData (SEXP dataFile, SEXP indexFile, SEXP rowpatterns, SEXP colpatterns, S
     long ii;
     enum status res;
     char *buffer;
-#ifdef _WIN32
-    char tmpname[] = "tmpXXXXXX";
-    char tmpname2[10];
-    int rez;
-#else
-    char tmpname[] = "/tmp/tsvindex-XXXXXX";
-#endif
     int tmpfd;
     dynHashTab *rowdht, *coldht;
-    
 #ifdef DEBUG
     Rprintf ("> tsvGetData\n");
 #endif
@@ -660,7 +681,12 @@ tsvGetData (SEXP dataFile, SEXP indexFile, SEXP rowpatterns, SEXP colpatterns, S
     PROTECT (rowpatterns = AS_CHARACTER(rowpatterns));
     PROTECT (colpatterns = AS_CHARACTER(colpatterns));
     PROTECT (findany = AS_LOGICAL(findany));
-    nprotect += 5;
+    PROTECT (r_tmp_template = AS_CHARACTER(r_tmp_template)); // template for mkstemp temporary files (in R's tempdir())
+    nprotect += 6;
+    
+    const int tmplate_len = strlen(CHAR(STRING_ELT(r_tmp_template, 0)));
+    char tmpfile_template[tmplate_len]; // mutable copy r_tmp_template for actual usage in mkstemp
+    strcpy(tmpfile_template, CHAR(STRING_ELT(r_tmp_template, 0)));
 
     setResult = get_result_setter (dtype);
     if (setResult == NULL) {
@@ -703,26 +729,14 @@ tsvGetData (SEXP dataFile, SEXP indexFile, SEXP rowpatterns, SEXP colpatterns, S
 	    indexpp[ii] = fopen (CHAR(STRING_ELT(indexFile,ii)), "wb+");
 	    if (indexpp[ii] == NULL) {
 		warning ("unable to create indexfile '%s': try to create a temp file\n", CHAR(STRING_ELT(indexFile,ii)));
-#ifdef _WIN32
-                strcpy_s (tmpname2, sizeof(tmpname2), tmpname);
-		rez = _mktemp_s (tmpname2, sizeof(tmpname2));
-                if (rez == 0) {
-                    _sopen_s (&tmpfd, tmpname2, _O_RDWR | _O_CREAT | _O_TEMPORARY | _O_SHORT_LIVED, _SH_DENYNO, _S_IREAD|_S_IWRITE);
-                } else {
-                    tmpfd = -1;
-                }
-#else
-		tmpfd = mkstemp (tmpname);
-#endif
+		tmpfd = mkstemp (tmpfile_template);
 		if (tmpfd < 0) {
 		    free (buffer);
 		    closeTsvFiles (numFiles, tsvpp, indexpp);
 		    error ("tsvGetData: unable to create even a temporary indexfile\n");
 		}
 		indexpp[ii] = fdopen (tmpfd, "wb+");
-#ifndef _WIN32
-		unlink (tmpname);
-#endif
+		unlink (tmpfile_template);
 	    }
 	    res = generate_index (tsvpp[ii], indexpp[ii]);
 	    if (is_fatal_error (res)) {
