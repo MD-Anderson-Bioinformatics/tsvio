@@ -49,7 +49,7 @@ mkstemp(char *template) {
 	const char *const_template = template;
 	const int const_template_len = strlen(const_template);
 	char templateWIN[const_template_len + 1];
-	strcpy(templateWIN, const_template);
+	strncpy(templateWIN, const_template, const_template_len + 1);
 	int error_no;
 	error_no = _mktemp_s(templateWIN, sizeof(templateWIN));
 	if (error_no == 0) {
@@ -683,10 +683,10 @@ tsvGetData (SEXP dataFile, SEXP indexFile, SEXP rowpatterns, SEXP colpatterns, S
     PROTECT (findany = AS_LOGICAL(findany));
     PROTECT (r_tmp_template = AS_CHARACTER(r_tmp_template)); // template for mkstemp temporary files (in R's tempdir())
     nprotect += 6;
-    
+
     const int tmplate_len = strlen(CHAR(STRING_ELT(r_tmp_template, 0)));
     char tmpfile_template[tmplate_len]; // mutable copy r_tmp_template for actual usage in mkstemp
-    strcpy(tmpfile_template, CHAR(STRING_ELT(r_tmp_template, 0)));
+    strncpy(tmpfile_template, CHAR(STRING_ELT(r_tmp_template, 0)), tmplate_len);
 
     setResult = get_result_setter (dtype);
     if (setResult == NULL) {
