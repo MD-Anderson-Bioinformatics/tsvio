@@ -6,6 +6,7 @@ Authors@R:
     person(given=c("Mary", "A"), family="Rohrdanz", role=c("ctb", "cre"), email="marohrdanz@mdanderson.org"),
     person(given="Chris", family="Wakefield", role=c("ctb"), email="cwakefield@mdanderson.org"),
     person(given="James", family="Melott", role=c("ctb"), email="jmmelott@mdanderson.org"),
+    person(given="Paul", family="Hsieh", role=c("ctb")),
     person(given="MD Anderson Cancer Center", role=c("cph")))
 Depends:
     R (>= 3.4.0)
@@ -16,7 +17,6 @@ Suggests:
 Description: Provides simple functions for processing data files in
     tab-separated value (TSV) format.
 License: GPL (>= 3)
-Copyright: file COPYRIGHTS
 Encoding: UTF-8
 URL: https://github.com/MD-Anderson-Bioinformatics/tsvio
 NeedsCompilation: yes
