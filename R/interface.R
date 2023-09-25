@@ -28,6 +28,8 @@ NULL
 #' @param indexfile The name (and path) of the file(s) to which the index will be written.  There must
 #' be exactly one index file for every filename.
 #'
+#' @return NULL. This function generates an index file.
+#'
 #' @export
 #'
 #' @examples
