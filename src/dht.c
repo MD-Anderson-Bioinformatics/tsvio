@@ -39,8 +39,8 @@ char *strndup(const char *s, size_t n) {
  */
 
 /* This function was written by Paul Hsieh and obtained from http://www.azillionmonkeys.com/qed/hash.html
- * under the LGPL 2.1 license.  I modified it very slightly to accept the initial hash value as a
- * parameter.
+ * originally under the LGPL 2.1 license and now under the GNU General Public License v3.
+ * Bradley Broom modified it very slightly to accept the initial hash value as a parameter (7 Aug 2014).
  */
 /*#include "pstdint.h"*/ /* Replace with <stdint.h> if appropriate */
 #include <stdint.h>

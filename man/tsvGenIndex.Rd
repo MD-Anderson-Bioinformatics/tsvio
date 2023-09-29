@@ -12,6 +12,9 @@ tsvGenIndex(filename, indexfile)
 \item{indexfile}{The name (and path) of the file(s) to which the index will be written.  There must
 be exactly one index file for every filename.}
 }
+\value{
+NULL. This function generates an index file.
+}
 \description{
 This function reads a TSV file and produces an index to the start of each row.
 The TSV file is required to have a header line and at least one data line.  The header line may
