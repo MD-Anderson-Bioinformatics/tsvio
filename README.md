@@ -18,6 +18,6 @@ install.packages("tsvio")
 
 The following documentation is available:
 
-- Main [CRAN repository page](https://cran.r-project.org/web/packages/tsvio/)
+- Main [CRAN repository page](https://cran.r-project.org/package=tsvio)
 - Vignettes on [CRAN](https://cran.r-project.org/web/packages/tsvio/vignettes/tsvio.html)
 
