@@ -173,7 +173,7 @@ get_tsv_line_buffer (char *buffer, size_t bufsize, FILE *tsvp, long posn)
     len = 0;
     while ((ch = getc (tsvp)) != EOF && ch != '\n') {
 	if (len >= (bufsize - 1)) {
-	    error ("get_tsv_line: line starting at %ld longer than buffer length (%d bytes)\n", posn, bufsize);
+	    error ("get_tsv_line: line starting at %ld longer than buffer length (%lu bytes)\n", posn, bufsize);
 	}
 	if (ch != '\r') { /* Ignore carriage return character (should only be on Windows). */
 	    buffer[len++] = ch;
@@ -323,10 +323,10 @@ static void set_result_int (SEXP result, long idx, char *s, long n)
         if (scopy[0] == '\0' || strncmp (scopy, "NA", 2) == 0) {
 	    value = NA_INTEGER;
 	} else {
-	    error ("Non-integer field '%.*s' encountered", n, scopy);
+	    error ("Non-integer field '%.*s' encountered", (int)n, scopy);
 	}
     } else if (*end != '\t' && *end != '\n' && *end != '\r' && *end != '\0') {
-	error ("unexpected non-numeric data following integer field: '%.*s'", n, scopy);
+	error ("unexpected non-numeric data following integer field: '%.*s'", (int)n, scopy);
     }
     INTEGER(result)[idx] = value;
 }
@@ -348,10 +348,10 @@ static void set_result_num (SEXP result, long idx, char *s, long n)
         } else if (strncmp (scopy, "Inf", 3) == 0) {
 	    value = R_PosInf;
 	} else {
-	    error ("Non-numeric field '%.*s' encountered", n, scopy);
+	    error ("Non-numeric field '%.*s' encountered", (int)n, scopy);
 	}
     } else if (*end != '\t' && *end != '\n' && *end != '\r' && *end != '\0') {
-	error ("unexpected non-numeric data following numeric field: '%.*s'", n, scopy);
+	error ("unexpected non-numeric data following numeric field: '%.*s'", (int)n, scopy);
     }
     REAL(result)[idx] = value;
 }
@@ -769,7 +769,7 @@ tsvGetData (SEXP dataFile, SEXP indexFile, SEXP rowpatterns, SEXP colpatterns, S
 	    free (buffer);
 	    closeTsvFiles (numFiles, tsvpp, indexpp);
 	    freeDynHashTab (rowdht);
-	    error ("i/o or syntax error %d processing indexfile %d\n", res, ii+1);
+	    error ("i/o or syntax error %d processing indexfile %ld\n", res, ii+1);
 	}
     }
 
@@ -825,7 +825,7 @@ tsvGetData (SEXP dataFile, SEXP indexFile, SEXP rowpatterns, SEXP colpatterns, S
 	    closeTsvFiles (numFiles, tsvpp, indexpp);
 	    freeDynHashTab (rowdht);
 	    freeDynHashTab (coldht);
-	    error ("i/o or syntax error scanning header of datafile %d\n", ii+1);
+	    error ("i/o or syntax error scanning header of datafile %ld\n", ii+1);
 	}
     }
 
