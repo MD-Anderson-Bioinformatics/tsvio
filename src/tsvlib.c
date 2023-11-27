@@ -49,7 +49,11 @@ mkstemp(char *template) {
 	const char *const_template = template;
 	const int const_template_len = strlen(const_template);
 	char templateWIN[const_template_len + 1];
-	strncpy(templateWIN, const_template, const_template_len + 1);
+	const int max_n = 120;
+	if (const_template_len > max_n) {
+		error ("template length exceeds maximum allowed length of %d", max_n);
+	}
+	strncpy(templateWIN, const_template, max_n);
 	int error_no;
 	error_no = _mktemp_s(templateWIN, sizeof(templateWIN));
 	if (error_no == 0) {
