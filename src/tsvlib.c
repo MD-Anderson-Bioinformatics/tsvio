@@ -177,7 +177,7 @@ get_tsv_line_buffer (char *buffer, size_t bufsize, FILE *tsvp, long posn)
     len = 0;
     while ((ch = getc (tsvp)) != EOF && ch != '\n') {
 	if (len >= (bufsize - 1)) {
-	    error ("get_tsv_line: line starting at %ld longer than buffer length (%lu bytes)\n", posn, bufsize);
+	    error ("get_tsv_line: line starting at %ld longer than buffer length (%lu bytes)\n", posn, (unsigned long)bufsize);
 	}
 	if (ch != '\r') { /* Ignore carriage return character (should only be on Windows). */
 	    buffer[len++] = ch;
